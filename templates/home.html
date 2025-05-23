@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Trooba - Home</title>
+  <!-- Bootstrap CSS CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <!-- Add AOS for scroll animations -->
+  <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <style>
+    :root {
+      /* Light theme variables */
+      --primary-color: #5d5fef;
+      --secondary-color: #4079ed;
+      --accent-color: #4895ef;
+      --text-color: #151d48;
+      --text-secondary: #737791;
+      --light-bg: #fafbfc;
+      --card-bg: #ffffff;
+      --border-color: #f8f9fa;
+      --shadow: 0px 4px 20px rgba(237, 237, 237, 0.5);
+    }
+    
+    [data-theme="dark"] {
+      --text-color: #f8fafc;
+      --text-secondary: #94a3b8;
+      --light-bg: #0f172a;
+      --card-bg: #1e293b;
+      --border-color: #334155;
+      --shadow: 0px 4px 20px rgba(0, 0, 0, 0.3);
+    }
+    
+    body {
+      font-family: 'Poppins', 'Segoe UI', system-ui, -apple-system, sans-serif;
+      color: var(--text-color);
+      line-height: 1.6;
+      background-color: var(--light-bg);
+      transition: all 0.3s ease;
+      margin: 0;
+      padding: 0;
+    }
+    
+    .main-wrapper {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      width: 280px;
+      background-color: var(--card-bg);
+      padding: 50px 20px;
+      border-right: 1px solid var(--border-color);
+      transition: all 0.3s ease;
+      position: fixed;
+      height: 100%;
+      z-index: 1000;
+    }
+
+    .logo-section {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 55px;
+    }
+    .logo {
+      width: 56px;
+      height: 56px;
+      background-color: var(--primary-color);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .logo svg {
+      width: 25px;
+      height: 25px;
+      color: white;
+    }
+
+    .brand-name {
+      font-size: 30px;
+      font-weight: 600;
+      color: var(--text-color);
+    }
+
+    .nav-menu {
+      list-style: none;
+      padding: 0;
+    }
+
+    .nav-item {
+      margin-bottom: 32px;
+    }
+
+    .nav-link {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      padding: 16px 24px;
+      border-radius: 16px;
+      text-decoration: none;
+      color: var(--text-secondary);
+      font-size: 18px;
+      transition: all 0.3s ease;
+    }
+
+    .nav-link:hover {
+      background-color: var(--light-bg);
+      color: var(--text-color);
+    }
+
+    .nav-link.active {
+      background-color: var(--primary-color);
+      color: white;
+    }
+
+    .nav-link svg {
+      width: 24px;
+      height: 24px;
+    }
+    
+    .dropdown-container {
+      display: none;
+      padding-left: 30px;
+      transition: all 0.3s ease;
+    }
+    
+    .dropdown-container .nav-link {
+      font-size: 16px;
+      padding: 12px 20px;
+    }
+    
+    .dropdown-btn {
+      cursor: pointer;
+      position: relative;
+    }
+    
+    .dropdown-btn::after {
+      content: '+';
+      position: absolute;
+      right: 20px;
+      transition: transform 0.3s;
+    }
+    
+    .dropdown-btn.active::after {
+      content: '-';
+    }
+
+    .content {
+      flex: 1;
+      margin-left: 280px;
+      padding: 24px;
+      background-color: var(--light-bg);
+      transition: all 0.3s ease;
+    }
+    
+    .top-bar {
+      height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 40px;
+      background-color: var(--card-bg);
+      border-radius: 20px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow);
+      transition: all 0.3s ease;
+    }
+
+    .page-title {
+      font-size: 36px;
+      font-weight: 600;
+      color: var(--text-color);
+    }
+
+    .theme-toggle {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-color);
+      width: 50px;
+      height: 50px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .theme-toggle:hover {
+      background-color: var(--light-bg);
+    }
+
+    .hero-section {
+      background-color: var(--card-bg);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      transition: all 0.3s ease;
+      margin-bottom: 24px;
+    }
+
+    .hero-text h1 {
+      font-size: 3.5rem;
+      font-weight: 800;
+      background: linear-gradient(120deg, var(--primary-color), var(--accent-color));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 1.5rem;
+    }    .hero-text p {
+      font-size: 1.25rem;
+      color: var(--text-secondary);
+      margin-bottom: 2rem;
+    }
+
+    .btn-primary {
+      background: var(--primary-color);
+      border: none;
+      padding: 12px 30px;
+      border-radius: 10px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .btn-primary:hover {
+      background: var(--secondary-color);
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(67, 97, 238, 0.4);
+    }
+
+    .btn-outline-secondary {
+      border-color: var(--primary-color);
+      color: var(--primary-color);
+      padding: 12px 30px;
+      border-radius: 10px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+
+    .btn-outline-secondary:hover {
+      background: var(--primary-color);
+      color: white;
+      transform: translateY(-2px);
+    }
+
+    .features-section {
+      padding: 5rem 0;
+    }
+
+    .feature-card {
+      background: white;
+      border-radius: 15px;
+      padding: 2rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+      transition: all 0.3s ease;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 40px rgba(0,0,0,0.08);
+    }
+
+    .service-img img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 20px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    }    footer {
+      background: var(--light-bg);
+      border-radius: 20px 20px 0 0;
+      margin-top: 5rem;
+    }
+    
+    /* Feature cards should adapt to dark theme */
+    [data-theme="dark"] .feature-card {
+      background-color: var(--card-bg);
+      color: var(--text-color);
+    }
+    
+    /* Responsive styles */
+    @media (max-width: 1024px) {
+      .sidebar {
+        width: 100px;
+        padding: 50px 20px;
+      }
+
+      .brand-name,
+      .nav-link span {
+        display: none;
+      }
+
+      .nav-link {
+        justify-content: center;
+        padding: 16px;
+      }
+
+      .nav-link svg {
+        margin-right: 0;
+      }
+      
+      .content {
+        margin-left: 100px;
+      }
+      
+      .dropdown-btn::after {
+        display: none;
+      }
+      
+      .dropdown-container {
+        position: absolute;
+        left: 100px;
+        background-color: var(--card-bg);
+        border-radius: 0 10px 10px 0;
+        box-shadow: var(--shadow);
+        z-index: 1000;
+        padding: 10px;
+        width: 200px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .main-wrapper {
+        flex-direction: column;
+      }
+
+      .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+        padding: 20px;
+      }
+      
+      .brand-name,
+      .nav-link span {
+        display: inline;
+      }
+      
+      .content {
+        margin-left: 0;
+      }
+      
+      .top-bar {
+        flex-direction: column;
+        height: auto;
+        gap: 16px;
+        padding: 20px;
+      }
+      
+      .page-title {
+        font-size: 28px;
+      }
+      
+      .hero-text h1 {
+        font-size: 2.5rem;
+      }
+      
+      .dropdown-container {
+        position: static;
+        width: auto;
+        box-shadow: none;
+        padding-left: 40px;
+      }
+    }
+  </style>
+</head>
+<body data-theme="light">
+<div class="main-wrapper">
+  <aside class="sidebar">
+    <div class="logo-section">
+      <div class="logo">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+          <polyline points="9 22 9 12 15 12 15 22"></polyline>
+        </svg>
+      </div>
+      <h1 class="brand-name">TROOBA</h1>
+    </div>
+    <nav>
+      <ul class="nav-menu">
+        <li class="nav-item">
+          <a href="{{ url_for('home') }}" class="nav-link active">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+              <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+            <span>Home</span>
+          </a>
+        </li>
+
+        <li class="nav-item">
+          <a href="#" class="nav-link dropdown-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+              <path d="M2 10h20"></path>
+            </svg>
+            <span>Dashboard</span>
+          </a>
+          <div class="dropdown-container">
+            <a href="{{ url_for('dashboard') }}" class="nav-link">
+              <span>Main Dashboard</span>
+            </a>
+            <a href="{{ url_for('inventory_insights') }}" class="nav-link">
+              <span>Inventory Insights</span>
+            </a>
+            <a href="{{ url_for('sales_insights') }}" class="nav-link">
+              <span>Sales Insights</span>
+            </a>
+          </div>
+        </li>
+        
+        <li class="nav-item">
+          <a href="{{ url_for('settings') }}" class="nav-link">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+            <span>Settings</span>
+          </a>
+        </li>
+        
+        {% if user %}
+        <li class="nav-item">
+          <a href="{{ url_for('logout') }}" class="nav-link">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+              <polyline points="10 17 15 12 10 7"></polyline>
+              <line x1="15" y1="12" x2="3" y2="12"></line>
+            </svg>
+            <span>Logout</span>
+          </a>
+        </li>
+        {% else %}
+        <li class="nav-item">
+          <a href="{{ url_for('login') }}" class="nav-link">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+              <polyline points="10 17 15 12 10 7"></polyline>
+              <line x1="15" y1="12" x2="3" y2="12"></line>
+            </svg>
+            <span>Login</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="{{ url_for('register') }}" class="nav-link">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+            <span>Register</span>
+          </a>
+        </li>
+        {% endif %}
+      </ul>
+    </nav>
+  </aside>
+  
+  <main class="content">
+    <div class="top-bar">
+      <h1 class="page-title">Retail Intelligence Platform</h1>
+      <button id="themeToggle" class="theme-toggle" aria-label="Toggle theme">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
+        </svg>
+      </button>
+    </div>
+
+  <div class="container my-5">
+    <div class="hero-section row p-4 pb-0 pe-lg-0 pt-lg-5 align-items-center rounded-3 border shadow-lg" data-aos="fade-up">
+      <div class="col-lg-7 p-3 p-lg-5 pt-lg-3 hero-text">
+        <h1 class="display-4 lh-1">
+          Trooba – Revolutionizing Retail with Intelligent Insights
+        </h1>
+        <p class="lead">
+          In today's dynamic market, retail is about more than transactions—it's about anticipating customer needs and market trends.
+          Trooba, our AI-driven Retail Intelligence solution, goes beyond traditional analytics to provide real-time, actionable insights that empower you to make smarter, faster, and more strategic decisions.
+        </p>
+        <div class="d-grid gap-3 d-md-flex justify-content-md-start mb-4 mb-lg-3">
+          {% if not user %}
+          <a href="{{ url_for('login') }}" class="btn btn-primary btn-lg px-4 me-md-2">LOGIN</a>
+          <a href="{{ url_for('register') }}" class="btn btn-outline-secondary btn-lg px-4">REGISTER</a>
+          {% else %}
+          <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-lg px-4 me-md-2">Dashboard</a>
+          {% endif %}
+        </div>
+      </div>
+      <div class="col-lg-5">
+        <img src="https://techsprout.ai/wp-content/uploads/2025/04/Group-139.png" class="img-fluid" alt="Analytics Dashboard" data-aos="fade-left" />
+      </div>
+    </div>
+  </div>
+
+  <div class="features-section container">
+    <div class="row g-4">
+      <div class="col-md-6" data-aos="fade-right">
+        <div class="feature-card h-100">
+          <h3 class="h2 mb-4">Why Retailers Love Trooba</h3>
+          <div class="feature-list">
+            <div class="d-flex align-items-center mb-3">
+              <i class="bi bi-check-circle-fill text-primary me-2"></i>
+              <p class="mb-0">Gain a competitive edge with predictive analytics</p>
+            </div>
+            <div class="d-flex align-items-center mb-3">
+              <i class="bi bi-check-circle-fill text-primary me-2"></i>
+              <p class="mb-0">Improve profitability through optimized operations</p>
+            </div>
+            <div class="d-flex align-items-center mb-3">
+              <i class="bi bi-check-circle-fill text-primary me-2"></i>
+              <p class="mb-0">Enhance customer satisfaction with personalized experiences</p>
+            </div>
+            <div class="d-flex align-items-center mb-3">
+              <i class="bi bi-check-circle-fill text-primary me-2"></i>
+              <p class="mb-0">Mitigate risks with proactive fraud detection</p>
+            </div>
+            <div class="d-flex align-items-center">
+              <i class="bi bi-check-circle-fill text-primary me-2"></i>
+              <p class="mb-0">Make data-driven decisions that drive tangible results</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6" data-aos="fade-left">
+        <div class="service-img">
+          <img src="https://techsprout.ai/wp-content/uploads/2025/04/Group-139.png" alt="Analytics Dashboard" class="img-fluid" />
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="container">
+    <footer class="py-4 my-4">
+      <ul class="nav justify-content-center border-bottom pb-3 mb-3">
+        <li class="nav-item"><a href="{{ url_for('home') }}" class="nav-link px-2 text-body-secondary">Home</a></li>
+        <li class="nav-item"><a href="#" class="nav-link px-2 text-body-secondary">Features</a></li>
+        <li class="nav-item"><a href="#" class="nav-link px-2 text-body-secondary">Pricing</a></li>
+        <li class="nav-item"><a href="#" class="nav-link px-2 text-body-secondary">FAQs</a></li>
+        <li class="nav-item"><a href="#" class="nav-link px-2 text-body-secondary">About</a></li>
+      </ul>
+      <p class="text-center text-body-secondary">© 2024 TechSprout AI LABS PVT LTD</p>
+    </footer>
+  </div>
+  </main>
+</div>
+
+<!-- Bootstrap JS Bundle -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Bootstrap Icons -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+<!-- AOS JS -->
+<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+<script>
+  AOS.init({
+    duration: 800,
+    once: true,
+    offset: 100
+  });
+  
+  // Dropdown menu toggle
+  const dropdownBtns = document.querySelectorAll('.dropdown-btn');
+  
+  dropdownBtns.forEach(btn => {
+    btn.addEventListener('click', function() {
+      this.classList.toggle('active');
+      const dropdownContent = this.nextElementSibling;
+      if (dropdownContent.style.display === 'block') {
+        dropdownContent.style.display = 'none';
+      } else {
+        dropdownContent.style.display = 'block';
+      }
+    });
+  });
+  
+  // Theme toggle functionality
+  const themeToggle = document.getElementById('themeToggle');
+  const body = document.body;
+  
+  themeToggle.addEventListener('click', () => {
+    const currentTheme = body.getAttribute('data-theme');
+    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+    body.setAttribute('data-theme', newTheme);
+    
+    // Update theme toggle icon
+    themeToggle.innerHTML = newTheme === 'light' 
+      ? '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg>'
+      : '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg>';
+  });
+</script>
+
+</body>
+</html>
