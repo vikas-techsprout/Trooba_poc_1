@@ -1,25 +1,52 @@
-import requests
-import sqlite3
-import os
-import json
-import time
-import re
-from datetime import datetime, timedelta
-from dotenv import load_dotenv
+# -------------------------------------------------------------------------
+# SHOPIFY DATA FETCHER MODULE
+# -------------------------------------------------------------------------
+# This module provides functionality to fetch data from a Shopify store
+# via the Shopify API and store it in a local SQLite database.
+# 
+# It handles:
+# - API authentication and connection
+# - Fetching products, variants, orders, and line items
+# - Data validation and safe storage
+# - Error handling and reporting
+# - Database setup and maintenance
+# -------------------------------------------------------------------------
+
+# Import required libraries
+import requests  # For making HTTP requests to the Shopify API
+import sqlite3   # For local database operations
+import os        # For file system operations
+import json      # For JSON data processing
+import time      # For rate limiting API calls
+import re        # For regular expression matching
+from datetime import datetime, timedelta  # For date calculations
+from dotenv import load_dotenv  # For loading environment variables
 
 # Load environment variables from .env file
 load_dotenv()
 
 # Shopify credentials from .env file
-SHOP_NAME = os.getenv("SHOPIFY_SHOP_NAME")
-ACCESS_TOKEN = os.getenv("SHOPIFY_ACCESS_TOKEN")
-API_VERSION = "2023-10"  # Update to the latest stable version
+SHOP_NAME = os.getenv("SHOPIFY_SHOP_NAME")  # Shopify store name
+ACCESS_TOKEN = os.getenv("SHOPIFY_ACCESS_TOKEN")  # API access token
+API_VERSION = "2023-10"  # Shopify API version - update to latest stable when needed
 
-# Define database path
+# Define database path - SQLite database file location
 DB_PATH = 'database/shopify_data.db'
 
 def validate_credentials():
-    """Validate Shopify credentials"""
+    """
+    Validate Shopify credentials before attempting API connection
+    
+    This function:
+    1. Checks that SHOP_NAME and ACCESS_TOKEN are provided
+    2. Validates the ACCESS_TOKEN has proper length
+    3. Ensures the SHOP_NAME follows Shopify's naming convention
+    
+    Returns:
+        tuple: (is_valid, error_message)
+            - is_valid (bool): True if credentials are valid
+            - error_message (str): Description of the validation error or None
+    """
     if not SHOP_NAME or not ACCESS_TOKEN:
         return False, "Missing Shopify credentials. Please check your .env file."
     
@@ -37,7 +64,17 @@ def validate_credentials():
     return True, None
 
 def construct_base_url():
-    """Construct the Shopify API base URL"""
+    """
+    Construct the Shopify API base URL from the shop name
+    
+    This function:
+    1. Cleans and normalizes the shop name from environment variables
+    2. Removes the '.myshopify.com' suffix if present
+    3. Formats the complete API URL with proper version
+    
+    Returns:
+        str: The formatted Shopify API base URL
+    """
     clean_shop_name = SHOP_NAME.lower().strip()
     if clean_shop_name.endswith('.myshopify.com'):
         clean_shop_name = clean_shop_name.replace('.myshopify.com', '')
@@ -45,7 +82,19 @@ def construct_base_url():
     return f'https://{clean_shop_name}.myshopify.com/admin/api/{API_VERSION}'
 
 def parse_link_header(link_header):
-    """Parse Link header to extract next URL"""
+    """
+    Parse the Link header from Shopify API response for pagination
+    
+    This function extracts the URL for the next page of results from the Link header
+    provided by the Shopify API. This is essential for retrieving all available data
+    through pagination.
+    
+    Args:
+        link_header (str): The Link header from Shopify API response
+        
+    Returns:
+        str or None: URL for the next page if available, otherwise None
+    """
     if not link_header or 'rel="next"' not in link_header:
         return None
     
@@ -54,7 +103,19 @@ def parse_link_header(link_header):
     return match.group(1) if match else None
 
 def setup_database():
-    """Create the required tables for Shopify data"""
+    """
+    Create the required database tables for Shopify data
+    
+    This function:
+    1. Creates the database directory if it doesn't exist
+    2. Establishes a connection to the SQLite database
+    3. Creates all required tables if they don't already exist:
+       - shopify_products: Store product information
+       - shopify_variants: Store product variants
+       - shopify_orders: Store order information
+       - shopify_order_line_items: Store individual line items in orders
+       - shopify_metadata: Store information about data fetching status
+    """
     # Create database directory if it doesn't exist
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
     
@@ -158,7 +219,22 @@ def setup_database():
         conn.commit()
 
 def safe_get_value(obj, key, default=None, expected_type=None):
-    """Safely get value from object with optional type conversion"""
+    """
+    Safely get value from object with optional type conversion
+    
+    This helper function safely extracts values from dictionaries with
+    proper type conversion and error handling.
+    
+    Args:
+        obj (dict): The dictionary to extract value from
+        key (str): The key to look up in the dictionary
+        default: Value to return if key is missing or conversion fails
+        expected_type: Type to convert the value to (int, float, bool, str)
+    
+    Returns:
+        The value from the dictionary converted to the expected type,
+        or the default value if the key is missing or conversion fails
+    """
     value = obj.get(key, default)
     
     if value is None or value == '':
@@ -181,7 +257,25 @@ def safe_get_value(obj, key, default=None, expected_type=None):
     return value
 
 def fetch_shopify_data():
-    """Fetch data from Shopify and store in local database"""
+    """
+    Fetch data from Shopify and store in local database
+    
+    This is the main function that orchestrates the entire data fetching process:
+    1. Validates Shopify credentials
+    2. Sets up the database schema
+    3. Clears existing data to ensure clean import
+    4. Tests API connection before proceeding
+    5. Fetches products and their variants
+    6. Fetches orders and their line items
+    7. Updates metadata with fetch status
+    
+    Returns:
+        dict: A dictionary containing the result of the operation:
+            - success: Boolean indicating if the operation was successful
+            - products_count: Number of products fetched (if successful)
+            - orders_count: Number of orders fetched (if successful)
+            - error: Error message (if not successful)
+    """
     # Validate credentials
     is_valid, error_msg = validate_credentials()
     if not is_valid:
@@ -274,7 +368,26 @@ def fetch_shopify_data():
         return {"success": False, "error": error_msg}
 
 def fetch_products(base_url, headers, cursor):
-    """Fetch products from Shopify API"""
+    """
+    Fetch products from Shopify API
+    
+    This function:
+    1. Makes API calls to retrieve all products from Shopify with pagination
+    2. Processes each product and its variants
+    3. Stores the product and variant data in the database
+    4. Handles rate limiting by adding delays between API calls
+    
+    Args:
+        base_url (str): Base URL for the Shopify API
+        headers (dict): HTTP headers containing authentication
+        cursor (sqlite3.Cursor): Database cursor for executing SQL
+        
+    Returns:
+        int: The number of products successfully fetched and stored
+        
+    Raises:
+        Exception: If there's an error fetching or processing products
+    """
     print("Fetching products from Shopify...")
     products_count = 0
     variants_count = 0
@@ -358,7 +471,27 @@ def fetch_products(base_url, headers, cursor):
         raise
 
 def fetch_orders(base_url, headers, cursor, days=90):
-    """Fetch orders from Shopify API"""
+    """
+    Fetch orders from Shopify API
+    
+    This function:
+    1. Makes API calls to retrieve orders from Shopify within a specified time period
+    2. Processes each order and its line items
+    3. Stores the order data in the database
+    4. Handles pagination and rate limiting
+    
+    Args:
+        base_url (str): Base URL for the Shopify API
+        headers (dict): HTTP headers containing authentication
+        cursor (sqlite3.Cursor): Database cursor for executing SQL
+        days (int): Number of days to look back for orders (default: 90)
+        
+    Returns:
+        int: The number of orders successfully fetched and stored
+        
+    Raises:
+        Exception: If there's an error fetching or processing orders
+    """
     print(f"Fetching orders from the last {days} days...")
     orders_count = 0
     line_items_count = 0
@@ -434,7 +567,21 @@ def fetch_orders(base_url, headers, cursor, days=90):
     return orders_count
 
 def update_metadata(status="unknown", products_count=0, orders_count=0, error_message=None):
-    """Update metadata about the last fetch"""
+    """
+    Update metadata about the last fetch
+    
+    This function records information about the most recent data fetch operation,
+    including status, product/order counts, and any error messages.
+    
+    Args:
+        status (str): Status of the fetch operation ("success", "error", or "unknown")
+        products_count (int): Number of products successfully fetched
+        orders_count (int): Number of orders successfully fetched
+        error_message (str): Error message if status is "error", None otherwise
+    
+    This data is used by the application to determine if the database has been
+    properly populated and to display information to the user about the last fetch.
+    """
     try:
         with sqlite3.connect(DB_PATH, timeout=20) as conn:
             cursor = conn.cursor()
@@ -457,7 +604,23 @@ def update_metadata(status="unknown", products_count=0, orders_count=0, error_me
         print(f"Database error in update_metadata: {e}")
 
 def check_shopify_data():
-    """Check if we have Shopify data and return basic metrics"""
+    """
+    Check if we have Shopify data and return basic metrics
+    
+    This function:
+    1. Connects to the Shopify database
+    2. Checks metadata for the last fetch status
+    3. Verifies if tables contain products and orders
+    4. Returns fetch time and data counts
+    
+    Returns:
+        dict: A dictionary containing:
+            - has_data: Boolean indicating if data exists
+            - fetch_time: Timestamp of the last fetch
+            - products_count: Number of products in database
+            - orders_count: Number of orders in database
+            - error: Error message (if applicable)
+    """
     try:
         with sqlite3.connect(DB_PATH, timeout=20) as conn:
             cursor = conn.cursor()
@@ -506,7 +669,26 @@ def check_shopify_data():
         }
 
 def get_analytics():
-    """Get basic analytics from Shopify data"""
+    """
+    Get basic analytics from Shopify data
+    
+    This function calculates key metrics from the Shopify database:
+    1. Total sales amount (excluding refunded orders)
+    2. Total order count
+    3. Total quantity of items sold
+    4. Top selling products by revenue
+    5. Product category distribution
+    
+    Returns:
+        dict: A dictionary containing analytics data:
+            - has_data: Boolean indicating if data exists
+            - total_sales: Total sales amount
+            - total_orders: Number of orders
+            - total_items: Number of items sold
+            - top_products: List of top selling products
+            - categories: List of product categories with counts
+            - error: Error message (if applicable)
+    """
     try:
         with sqlite3.connect(DB_PATH, timeout=20) as conn:
             conn.row_factory = sqlite3.Row  # This enables column access by name
@@ -589,14 +771,29 @@ def get_analytics():
             "error": str(e)
         }
 
-# Main execution when script is run directly
+# -------------------------------------------------------------------------
+# MAIN SCRIPT EXECUTION
+# -------------------------------------------------------------------------
 if __name__ == "__main__":
+    """
+    Main execution function when the script is run directly
+    
+    This block:
+    1. Creates the database directory if needed
+    2. Removes any existing database to ensure a clean start
+    3. Fetches fresh data from Shopify API
+    4. Displays success or error information in the console
+    
+    The clean database approach ensures data consistency by avoiding
+    partial updates or data corruption from failed previous runs.
+    """
     print("Running Shopify data fetcher...")
     
     # Make sure database directory exists
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
     
     # Delete existing database file to recreate it from scratch
+    # This ensures we have a clean start and prevents data inconsistencies
     if os.path.exists(DB_PATH):
         try:
             print("Removing existing database file...")
@@ -605,6 +802,7 @@ if __name__ == "__main__":
         except Exception as e:
             print(f"Could not remove database file: {e}")
     
+    # Execute the main data fetching function
     result = fetch_shopify_data()
     if result["success"]:
         print(f"Successfully fetched {result['products_count']} products and {result['orders_count']} orders.")

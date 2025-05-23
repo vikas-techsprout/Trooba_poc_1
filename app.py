@@ -1,3 +1,8 @@
+# -------------------------------------------------------------------------
+# IMPORTS AND ENVIRONMENT SETUP
+# -------------------------------------------------------------------------
+# Import necessary libraries for web application, data processing, visualization, 
+# database operations, and AI integration
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 import pandas as pd
 import plotly.graph_objs as go
@@ -17,15 +22,23 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
+# Initialize Flask application and set secret key
 app = Flask(__name__)
 app.secret_key = 'supersecretkey'  # Use env var in production
 
+# User dictionary for authentication (would use database in production)
 users = {}
 
-# Database configuration - Updated to use Shopify database
+# -------------------------------------------------------------------------
+# DATABASE CONFIGURATION
+# -------------------------------------------------------------------------
+# Define path to the SQLite database file for Shopify data
 DB_PATH = 'database/shopify_data.db'
 
-# Gemini AI configuration
+# -------------------------------------------------------------------------
+# GEMINI AI CONFIGURATION
+# -------------------------------------------------------------------------
+# Try to get Gemini API key from environment variables or .env file
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 if not GEMINI_API_KEY:
     try:
@@ -46,7 +59,7 @@ if not GEMINI_API_KEY:
 # Set up Gemini
 genai.configure(api_key=GEMINI_API_KEY)
 
-# Configure Gemini safety settings
+# Configure Gemini safety settings to prevent harmful content generation
 safety_settings = {
     HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
     HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
@@ -54,7 +67,7 @@ safety_settings = {
     HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
 }
 
-# Initialize the Gemini model
+# Initialize the Gemini model with specific configuration parameters
 try:
     model = genai.GenerativeModel(
         model_name="gemini-1.5-flash",
@@ -70,7 +83,10 @@ except Exception as e:
     print(f"Error initializing Gemini model: {e}")
     model = None
 
-# Create directories for storing insights
+# -------------------------------------------------------------------------
+# DIRECTORY AND PROMPTS SETUP
+# -------------------------------------------------------------------------
+# Create directories for storing AI insights and prompt templates
 os.makedirs('ai_insights', exist_ok=True)
 os.makedirs('prompts', exist_ok=True)
 
@@ -164,14 +180,35 @@ except ImportError:
     SHOPIFY_SALES_PROMPT = ""
     SHOPIFY_INVENTORY_PROMPT = ""
 
+# -------------------------------------------------------------------------
+# DATABASE UTILITY FUNCTIONS
+# -------------------------------------------------------------------------
+
 def get_db_connection():
-    """Create a database connection to Shopify database"""
+    """
+    Create a database connection to the Shopify SQLite database
+    
+    Returns:
+        sqlite3.Connection: A connection object to the SQLite database with row factory set
+    """
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
 
 def check_database_exists():
-    """Check if the Shopify database exists and has data"""
+    """
+    Check if the Shopify database exists and has data
+    
+    This function verifies:
+    1. If the database file exists
+    2. If the required tables exist in the database
+    3. If the tables contain any data
+    
+    Returns:
+        tuple: (exists_flag, message)
+            - exists_flag (bool): True if database exists and has data
+            - message (str): Status message describing the database state
+    """
     if not os.path.exists(DB_PATH):
         return False, "Shopify database not found. Please run the Shopify data fetcher first."
     
@@ -197,7 +234,21 @@ def check_database_exists():
         return False, f"Database error: {str(e)}"
 
 def prepare_shopify_sales_data_for_ai():
-    """Extract and format Shopify sales data for the AI prompt"""
+    """
+    Extract and format Shopify sales data for the AI prompt
+    
+    This function:
+    1. Queries the database for top selling products
+    2. Collects order performance data over time
+    3. Analyzes sales by product category
+    4. Formats all data for AI consumption
+    
+    Returns:
+        dict: A dictionary containing formatted sales data for AI analysis:
+            - sales_data_summary: Overview of top selling products
+            - order_performance: Daily order metrics
+            - top_products: Details of the best performing products
+    """
     try:
         conn = get_db_connection()
         
@@ -278,7 +329,20 @@ def prepare_shopify_sales_data_for_ai():
         }
 
 def prepare_shopify_product_data_for_ai():
-    """Extract and format Shopify product data for the AI prompt"""
+    """
+    Extract and format Shopify product data for the AI prompt
+    
+    This function:
+    1. Queries product inventory status and details
+    2. Analyzes product performance metrics
+    3. Summarizes inventory status by product category
+    
+    Returns:
+        dict: A dictionary containing formatted product data for AI analysis:
+            - product_data_summary: Overview of product inventory
+            - product_performance: Sales performance metrics by product
+            - inventory_status: Summary of inventory by category
+    """
     try:
         conn = get_db_connection()
         
@@ -359,7 +423,18 @@ def prepare_shopify_product_data_for_ai():
         }
 
 def generate_sales_insights():
-    """Generate AI-powered sales insights using Gemini for Shopify data"""
+    """
+    Generate AI-powered sales insights using Gemini for Shopify data
+    
+    This function:
+    1. Prepares sales and product data by fetching from the database
+    2. Formats the data into a prompt for the Gemini AI model
+    3. Sends the prompt to the Gemini API and retrieves insights
+    4. Saves the generated insights to files for caching
+    
+    Returns:
+        str: Markdown-formatted sales insights text
+    """
     sales_data = prepare_shopify_sales_data_for_ai()
     product_data = prepare_shopify_product_data_for_ai()
     
@@ -434,7 +509,18 @@ def generate_sales_insights():
         """
 
 def generate_inventory_insights():
-    """Generate AI-powered inventory insights using Gemini for Shopify data"""
+    """
+    Generate AI-powered inventory insights using Gemini for Shopify data
+    
+    This function:
+    1. Prepares product and sales data from the database
+    2. Formats the data into a prompt for the Gemini AI model
+    3. Sends the prompt to the Gemini API and retrieves inventory analysis
+    4. Saves the generated insights to files for caching
+    
+    Returns:
+        str: Markdown-formatted inventory insights text
+    """
     sales_data = prepare_shopify_sales_data_for_ai()
     product_data = prepare_shopify_product_data_for_ai()
     
@@ -510,10 +596,21 @@ def generate_inventory_insights():
 
 @app.route('/')
 def home():
+    """
+    Homepage route
+    
+    Displays the application's landing page with user information if logged in.
+    """
     return render_template('home.html', user=session.get('user'))
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
+    """
+    User registration route
+    
+    GET: Displays the registration form
+    POST: Processes registration form data and creates a new user account
+    """
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
@@ -527,6 +624,15 @@ def register():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    """
+    User login route
+    
+    GET: Displays the login form
+    POST: Authenticates user credentials and creates a session
+    
+    Parameters:
+        next: URL to redirect to after successful login
+    """
     next_page = request.args.get('next') or url_for('home')
     if request.method == 'POST':
         username = request.form['username']
@@ -539,12 +645,35 @@ def login():
 
 @app.route('/logout')
 def logout():
+    """
+    User logout route
+    
+    Ends the user session and redirects to the homepage
+    """
     session.pop('user', None)
     flash("You have been logged out", "info")
     return redirect(url_for('home'))
 
 @app.route('/dashboard')
 def dashboard():
+    """
+    Dashboard route
+    
+    Displays the main analytics dashboard with Shopify sales data visualizations
+    
+    This route:
+    1. Checks if user is logged in
+    2. Verifies database exists and has data
+    3. Queries database for sales metrics and product data
+    4. Creates interactive visualizations using Plotly
+    5. Renders dashboard template with sales metrics and charts
+    
+    Charts include:
+    - Top products by revenue
+    - Top products by quantity
+    - Revenue by product category
+    - Sales trend over time
+    """
     if 'user' not in session:
         flash("Please login to access the dashboard.", "warning")
         return redirect(url_for('login', next=request.path))
@@ -846,6 +975,23 @@ def dashboard():
 
 @app.route('/inventory_insights')
 def inventory_insights():
+    """
+    Inventory insights route
+    
+    Displays inventory analysis including:
+    - Dead stock identification (products with no recent sales)
+    - Top performing products 
+    - Variant analysis
+    - New product performance
+    - Interactive charts for product status, category performance, and sales velocity
+    
+    This route:
+    1. Verifies user is logged in
+    2. Checks database exists and has data
+    3. Queries database for inventory metrics
+    4. Creates visualizations for inventory analysis
+    5. Renders template with inventory insights
+    """
     if 'user' not in session:
         flash("Please login to access inventory insights.", "warning")
         return redirect(url_for('login', next=request.path))
@@ -1109,6 +1255,24 @@ def inventory_insights():
 
 @app.route('/sales_insights')
 def sales_insights():
+    """
+    Sales insights route
+    
+    Displays detailed sales analysis including:
+    - Revenue growth comparison between time periods
+    - Low performing products identification
+    - High-value orders analysis
+    - Customer purchase patterns and repeat customer data
+    - Product category trends and performance
+    - Sales patterns by time of day
+    
+    This route:
+    1. Verifies user is logged in
+    2. Checks database exists and has data
+    3. Queries database for sales metrics and trends
+    4. Creates visualizations for sales performance
+    5. Renders template with sales insights data
+    """
     if 'user' not in session:
         flash("Please login to access sales insights.", "warning")
         return redirect(url_for('login', next=request.path))
@@ -1363,12 +1527,31 @@ def sales_insights():
 
 @app.route('/settings')
 def settings():
-    """Settings route that just redirects to dashboard for now"""
+    """
+    Settings route
+    
+    Currently a placeholder route that redirects to the dashboard
+    with a notification about future functionality.
+    
+    This route:
+    1. Displays a flash message about upcoming settings features
+    2. Redirects user back to the dashboard page
+    3. Will be expanded in future to include app configuration options
+    """
     flash("Settings functionality coming soon!", "info")
     return redirect(url_for('dashboard'))
 
 @app.route('/setup_db_route')
 def setup_db_route():
+    """
+    Database setup route
+    
+    This route handles the initialization of the Shopify database by:
+    1. Verifying user is logged in
+    2. Triggering the Shopify data fetcher to populate the database
+    3. Displaying success or failure message
+    4. Redirecting to dashboard
+    """
     if 'user' not in session:
         flash("Please login to access database setup.", "warning")
         return redirect(url_for('login', next=request.path))
@@ -1392,7 +1575,20 @@ def setup_db_route():
 
 @app.route('/ai_insights')
 def ai_insights():
-    """AI insights page for Shopify data"""
+    """
+    AI insights page for Shopify data
+    
+    This route:
+    1. Checks if user is logged in
+    2. Verifies database exists and has data
+    3. Retrieves or generates AI-powered insights
+    4. Renders the insights page with formatted Markdown content
+    
+    The page displays:
+    - Sales performance insights generated by Gemini AI
+    - Inventory intelligence insights generated by Gemini AI
+    - Last update timestamp
+    """
     if 'user' not in session:
         flash("Please login to access AI insights.", "warning")
         return redirect(url_for('login', next=request.path))
@@ -1451,7 +1647,15 @@ def ai_insights():
 
 @app.route('/refresh_ai_insights')
 def refresh_ai_insights():
-    """Generate fresh AI insights"""
+    """
+    Generate fresh AI insights
+    
+    This route:
+    1. Verifies user is logged in
+    2. Removes cached insight files
+    3. Triggers new AI insight generation
+    4. Redirects to the insights page
+    """
     if 'user' not in session:
         flash("Please login to access AI insights.", "warning")
         return redirect(url_for('login', next=request.path))
@@ -1475,7 +1679,12 @@ def refresh_ai_insights():
 
 @app.route('/reset_dashboard')
 def reset_dashboard():
-    """Reset dashboard route - for sidebar compatibility"""
+    """
+    Reset dashboard route
+    
+    Used to clear dashboard filters and reset to default view.
+    Also serves as a compatibility function for sidebar navigation.
+    """
     if 'user' not in session:
         flash("Please login to access the dashboard.", "warning")
         return redirect(url_for('login', next=request.path))
@@ -1484,19 +1693,40 @@ def reset_dashboard():
 
 @app.errorhandler(werkzeug.routing.exceptions.BuildError)
 def handle_build_error(error):
-    """Handle URL building errors by redirecting to dashboard"""
+    """
+    Handle URL building errors
+    
+    Redirects to dashboard with warning message when routes cannot be built correctly
+    """
     flash(f"The requested page could not be found.", "warning")
     return redirect(url_for('dashboard'))
     
 @app.errorhandler(404)
 def page_not_found(e):
-    """Handle 404 errors"""
+    """
+    Handle 404 errors
+    
+    Redirects to dashboard with warning message when pages are not found
+    """
     flash("The requested page was not found.", "warning")
     return redirect(url_for('dashboard'))
 
+# -------------------------------------------------------------------------
+# SHOPIFY DATA INTEGRATION
+# -------------------------------------------------------------------------
 def fetch_shopify_data():
     """
     Fetch data from Shopify API and store in database
+    
+    This function attempts to import and call the Shopify data fetcher module.
+    If the module is not available, it returns a placeholder result.
+    
+    Returns:
+        dict: A dictionary containing the result of the operation:
+            - success: Boolean indicating if the operation was successful
+            - products_count: Number of products fetched (if successful)
+            - orders_count: Number of orders fetched (if successful)
+            - error: Error message (if not successful)
     """
     try:
         # Import the Shopify data fetcher
@@ -1519,19 +1749,22 @@ def fetch_shopify_data():
         }
 
 if __name__ == '__main__':
-    # Create necessary directories
+    # -------------------------------------------------------------------------
+    # APPLICATION STARTUP SEQUENCE
+    # -------------------------------------------------------------------------
+    # Create necessary directories for data storage
     os.makedirs('ai_insights', exist_ok=True)
     os.makedirs('prompts', exist_ok=True)
     os.makedirs('database', exist_ok=True)
     
-    # Print success message
+    # Print startup information
     print("Starting TROOBA Shopify Analytics server...")
     print(f"Gemini API Key: {'Configured' if GEMINI_API_KEY else 'Missing'}")
     print(f"Database Path: {DB_PATH}")
     
-    # Check database status
+    # Check database status and print results
     db_exists, db_message = check_database_exists()
     print(f"Database Status: {db_message}")
     
-    # Run the Flask app - only on localhost to prevent multiple interfaces
+    # Run the Flask app - only on localhost to prevent multiple interfaces for security
     app.run(debug=True, host='127.0.0.1', port=5000)
